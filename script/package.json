@@ -1,0 +1,21 @@
+{
+  "name": "script",
+  "version": "1.0.0",
+  "main": "check_default_tag.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@tryghost/admin-api": "^1.13.17",
+    "axios": "^1.10.0",
+    "lexical": "^0.33.0",
+    "markdown-it": "^14.1.0",
+    "marked": "^16.0.0",
+    "puppeteer": "^24.11.2"
+  },
+  "type": "module"
+}
