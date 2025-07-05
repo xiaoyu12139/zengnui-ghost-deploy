@@ -7,8 +7,8 @@ import { marked } from 'marked';  // 使用 ES 模块导入
 
 // 设置 Ghost API 配置
 const api = new GhostAdminAPI({
-  url: 'https://zengnui.uk',  // 你的 Ghost 后台 URL
-  key: '6868f62470e4bf6682443f43:6a9d53318e2d9b23b70906205ce7bb712038e6c607a2658d0079785205daef26',  // 你的 API 密钥
+  url: 'https://.',  // 你的 Ghost 后台 URL
+  key: ':',  // 你的 API 密钥
   version: "v5.0",  // Ghost API 版本
 });
 
