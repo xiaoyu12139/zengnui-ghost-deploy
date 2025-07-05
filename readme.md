@@ -34,4 +34,22 @@ taxonomies:
 
 添加tags.hbs
 
+#### api管理内容
+
+首先cloudflare关闭限制访问
+
+进入script文件夹
+
+```
+npm init -y
+npm install @tryghost/admin-api
+```
+
+创建更新文章默认标签脚本
+
+创建上传本地文章脚本
+
+node xxx.js执行脚本
+
 #### TODO：发布文章时默认添加一个标签分类？
+
