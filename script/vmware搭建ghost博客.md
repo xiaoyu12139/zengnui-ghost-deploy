@@ -126,7 +126,8 @@ git remote add origin git@github.com:<YourUsername>/Ghost.git
 
 ```
 # Only ever run this once
-# 执行前需要开启shell代理
+# 执行前需要开启shell代理，进入到Ghost目录执行yarn setup
+# 同时给Ghost目录当前用户权限：sudo chmod -R 777 Ghost
 yarn setup
 ```
 
