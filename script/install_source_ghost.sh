@@ -108,8 +108,8 @@ install_if_missing() {
 }
 # 软件包列表
 # packages=("gedit" "mysql-server" "vim" "curl" "git" "python3-venv" "python3-dev" "python3-setuptools")
-# packages=("gedit" "curl" "git" "python3" "python3-dev" "python3-setuptools" "python3-venv"  "net-tools" "build-essential")
-packages=("gedit" "curl" "git" "net-tools")
+packages=("gedit" "curl" "git" "openssh-server" "python3" "python3-dev" "python3-setuptools" "python3-venv"  "net-tools" "build-essential")
+# packages=("gedit" "curl" "git" "net-tools")
 # 遍历软件包列表，检查并安装
 for package in "${packages[@]}"; do
     install_if_missing $package
@@ -259,6 +259,7 @@ else
     # git remote rename origin upstream
     # git remote add origin https://github.com/xiaoyu12139/Ghost.git
     git clone --recurse-submodules https://github.com/xiaoyu12139/Ghost.git && cd Ghost
+    git config --global --add safe.directory ${pwd}
 fi
 close_shell_proxy
 # git config --global --add safe.directory /home/xiaoyu/ghost/Ghost

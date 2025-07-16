@@ -134,8 +134,40 @@ yarn setup
 启动：默认访问http://localhost:2368/ 后台管理http://localhost:2368/ghost/
 
 ```
+# 增加文件观察器上限，编辑 /etc/sysctl.conf 文件，增加或修改以下内容：
+fs.inotify.max_user_watches=524288
 yarn dev
 ```
+
+##### 开发：
+
+在Ghost/ghost下编辑config.devlop.json
+
+```
+1.添加这个用于配置邮箱验证
+"mail": {
+    "transport": "SMTP",
+    "options": {
+      "service": "QQ",
+      "host": "smtp.qq.com",
+      "port": 465,
+      "secure": true,
+      "auth": {
+        "user": "your-email@qq.com",  // 你的 QQ 邮箱地址
+        "pass": "your-auth-code"  // 你的授权码（不是密码）
+      }
+    }
+  }
+2.配置vmware中的ghost到内网可以访问
+"url": "http://192.168.72.130:2368",
+"server": {
+    "host": "0.0.0.0",
+    "port": 2368
+}
+  
+```
+
+* 问题：打包后，修改源码后会无法yarn setup，总是报一个包找不到
 
 ##### 配置过程中遇到的问题：
 
@@ -152,6 +184,10 @@ yarn dev
   export ALL_PROXY="socks5h://192.168.124.3:7890"
   unset HTTP_PROXY HTTPS_PROXY
   ```
+
+* 执行：执行完安装脚本后，注销用户后重新登录，在执行yarn setup
+
+  同时需要执行：git config --global --add safe.directory /home/xiaoyu/ghost/Ghost（Ghost的源码目录）
 
 #### 3、ghost官方推荐安装
 
@@ -170,20 +206,22 @@ ghost install --dir /path/to/your/desired/directory
 源码编辑准备：
 
 ```
-# 安装依赖并编译前端
-yarn install
-yarn build
-# 只保留生产依赖
-npm prune --production
+在安装配置好源码安装的ghost后，通过yarn dev能够正常访问测试后，在执行源码打包
+关闭docker中ghost使用的相关程序
+docker stop $(docker ps -q)
+在Ghost的源码顶层目录中执行
+yarn add -W nx
 ```
 
-安装打包工具进行打包：
+安装打包工具进行打包：打包后拖拽到vm中的ubuntu中，检查是否大小与实际的tgz包相等，如果不相等或者有问题，选择使用scp进行安装
 
 ```
 yarn archive
-执行报错权限不够时，使用执行
-yarn nx run ghost:archive
+执行报错权限不够时，nx run ghost:"build:assets"这个任务执行失败，则单独执行
+yarn nx run ghost:"build:assets"
+然后在运行yarn archive
 可正常打包，打包的文件在core文件夹下，找不到可以搜索一下.tgz文件
+默认打包的输出路径在Ghost/ghost/core/xxx.tgz
 ```
 
 ##### 在目标服务器部署：
@@ -208,8 +246,29 @@ ALTER USER 'root'@'localhost' IDENTIFIED BY '你的密码';
 > ghost install官方文档https://ghost.org/docs/ghost-cli/#ghost-install
 
 ```
+需要开启shell代理，git代理，否则会访问一些资源失败
+# 添加其他用户可操作
+sudo chmod o+rx /home/xiaoyu
 # 安装并启动
-ghost install --archive ./ghost-custom.tar.gz --db mysql --dbhost 127.0.0.1 --dbuser root --dbpass 密码 --url https://your.domain.com --dir 安装到的目录
+ghost install --archive 绝对路径/ghost-custom.tgz --dir 安装到的目录（绝对路径）
+```
+
+启动ghost
+
+```
+在ghost install时会询问是否需要启动ghost，可以在这里就选择启动ghost
+或者后续使用ghost start启动
+
+启动过程中遇到的问题：
+启动问题按照提示的suggestion执行就能解决，要么就是权限不足，直接给整个目录权限赋成777
+但是在启动过程中还遇到的问题有:报错cron不是一个函数。解决办法为：
+1.在current下的packge中的搜索cron找到cron的版本修改为1.8.2。（后续需要测试，是否需要修改这里的版本）如果不需要则只需要执行下一步的操作即可
+2.找到current/node_modules/bree/lib这个目录，打开job-validator.js 文件，然后定位到文件中
+var cron = require('cron-validate');将这个改成var cronModule = require('cron-validate');
+// 兼容新版 cron-validate 的 default 导出和老版直接导出
+var cron = typeof cronModule === 'function'
+    ? cronModule
+    : (cronModule.default || cronModule);
 ```
 
 #### 5、ghost相关配置
