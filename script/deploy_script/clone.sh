@@ -1,8 +1,9 @@
 #!/bin/bash
 
 # 配置基础变量
-tmp_file_name=../proxy.sh
-source $(pwd)/${tmp_file_name}
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+tmp_file_name=$SCRIPT_DIR/../proxy.sh
+source ${tmp_file_name}
 
 # 克隆代码
 open_git_proxy

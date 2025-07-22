@@ -1,13 +1,19 @@
 #!/bin/bash
 
 # 配置基础变量
-tmp_file_name=../proxy.sh
-user_name=$(jq -r '.username // empty' ../config.json)
-node_version=$(jq -r '.node_version // empty' ../config.json)
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+proxy_dir=$SCRIPT_DIR/proxy.sh
+config_dir=$SCRIPT_DIR/config.json
+user_name=$(jq -r '.username // empty' $config_dir)
+echo "config.json中配置的用户名: $user_name"
+node_version=$(jq -r '.node_version // empty' $config_dir)
+echo "config.json中Node.js 版本: $node_version"
+
 # 安装配置
 NVM_DIR=/home/${user_name}/.nvm
 sudo -u ${user_name} bash <<EOF
-source $(pwd)/${tmp_file_name}
+# source不会新开一个shell，而是直接在当前shell中执行
+source $proxy_dir
 # 检查 Node.js 是否已安装
 if command -v node &> /dev/null
 then
@@ -31,4 +37,4 @@ else
     echo "安装的 npm 版本是：\$(npm -v)"
     echo "Node.js "${node_version}" 和 npm 安装完成！"
 fi
-# EOF
+EOF

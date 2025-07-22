@@ -1,3 +1,5 @@
+## 1、有界面的ubuntu配置
+
 下载安装cloudflared
 
 ```
@@ -99,4 +101,8 @@ https://dash.cloudflare.com/
 ![image-20250705221157877](.\img\image-20250705221157877.png)
 
 ![image-20250705221511260](.\img\image-20250705221511260.png)
+
+## 2、无界面的ubuntu server配置
+
+
 

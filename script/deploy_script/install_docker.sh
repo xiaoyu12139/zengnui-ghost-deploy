@@ -1,10 +1,12 @@
 #!/bin/bash
 
 # 配置基础变量
-tmp_file_name=../proxy.sh
-user_name=$(jq -r '.username // empty' ../config.json)
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+proxy_dir=$SCRIPT_DIR./proxy.sh
+config_dir=$SCRIPT_DIR/config.json
+user_name=$(jq -r '.username // empty' $config_dir)
 # 安装配置
-source $(pwd)/${tmp_file_name}
+source ${proxy_dir}
 open_shell_proxy
 # 检查 Docker 是否安装
 if command -v docker &>/dev/null; then

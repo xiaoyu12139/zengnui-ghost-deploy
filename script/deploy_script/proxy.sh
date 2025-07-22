@@ -5,7 +5,9 @@
 # 读取配置文件中的proxy_ip
 # 如果proxy_ip不存在，则输出提示信息并退出程序
 # jq 是一个用于在命令行下处理和解析 JSON 数据的工具
-proxy_ip=$(jq -r '.proxy_ip // empty' config.json)
+# SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+proxy_ip=$(jq -r '.proxy_ip // empty' $SCRIPT_DIR/config.json)
 if [ -z "$proxy_ip" ]; then
   echo "proxy_ip不存在，程序结束"
   exit 1

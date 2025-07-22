@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # 运行install目录下的安装脚本
-sudo bash ./intatll/dev_env.sh
-sudo bash ./install/npm.sh
-sudo bash ./install/yarn.sh
-sudo bash ./install/docker.sh
+sudo bash $(pwd)/intatll/dev_env.sh
+sudo bash $(pwd)/install/npm.sh
+sudo bash $(pwd)/install/yarn.sh
+sudo bash $(pwd)/install/docker.sh
 
 echo "Ghost开发环境部署完成。"
 echo "执行 yarn setup 初始 ghost 开发环境。"
