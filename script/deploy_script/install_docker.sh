@@ -5,6 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 proxy_dir=$SCRIPT_DIR./proxy.sh
 config_dir=$SCRIPT_DIR/config.json
 user_name=$(jq -r '.username // empty' $config_dir)
+docker_mirror_url=$(jq -r '.docker_mirror_url // empty' $config_dir)
 # 安装配置
 source ${proxy_dir}
 open_shell_proxy
