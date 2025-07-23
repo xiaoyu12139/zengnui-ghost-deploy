@@ -5,5 +5,7 @@
     "node_version": "v20.19.3",
     "mysql_user": "ghostuser",
     "mysql_password": "ghostpassword",
-    "mysql_database": "ghostdb"
+    "mysql_database": "ghostdb",
+    "ghost_archive_dir": "/home/xiaoyu",
+    "ghost_archive_file": "/home/xiaoyu/ghost.tgz"
 }

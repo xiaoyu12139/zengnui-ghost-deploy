@@ -328,3 +328,11 @@ const rootApp = () => {
 };
 ```
 
+在用户目录下创建文件 custom-ghost-config.json
+
+```json
+{
+    "defaultTagId": {id: '000000008292eb1a4db37ea9', name: 'Default Tag'}
+}
+```
+

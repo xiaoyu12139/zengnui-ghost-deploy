@@ -1,0 +1,10 @@
+{
+    "proxy_ip": "192.168.124.5",
+    "username": "xiaoyu",
+    "docker_mirror_url": "https://docker.m.daocloud.io",
+    "node_version": "v20.19.3",
+    "mysql_user": "ghostuser",
+    "mysql_password": "ghostpassword",
+    "mysql_database": "ghostdb",
+    "ghost_source_dir": "/home/xiaoyu"
+}
