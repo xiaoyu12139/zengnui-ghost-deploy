@@ -1,4 +1,18 @@
-#### 介绍
+## 目录结构
+
+* doc：相关操作文档、
+* script：相关配置脚本
+* theme：自定义修改的主题
+
+### 1、doc介绍
+
+详见doc目录下的markdown
+
+### 2、script介绍
+
+详见doc目录下的 script操作说明文档
+
+#### 3、theme介绍
 
 simply的明暗主题
 
