@@ -19,5 +19,7 @@ if [ ! -d "$ghost_dir" ]; then
     exit 1
 fi
 cd $ghost_dir
+# 赋予最高权限
+sudo chmod -R 777 $ghost_dir
 # 启动ghost开发环境
 yarn setup
