@@ -9,6 +9,14 @@ echo "config.json中配置的 ghost 安装目录: $ghost_archive_dir"
 ghost_archive_file=$(jq -r '.ghost_archive_file // empty' $config_dir)
 echo "config.json中配置的 ghost 安装文件: $ghost_archive_file"
 
+# 配置代理
+proxy_dir=$SCRIPT_DIR/proxy.sh
+source ${proxy_dir}
+# 开启代理
+open_shell_proxy
+open_git_proxy
+open_npm_proxy
+
 # 给 ghost 安装目录赋予权限
 sudo chmod o+rx $ghost_archive_dir
 
