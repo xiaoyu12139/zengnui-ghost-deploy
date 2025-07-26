@@ -21,5 +21,7 @@ fi
 cd $ghost_dir
 # 赋予最高权限
 sudo chmod -R 777 $ghost_dir
+# 添加git权限
+git config --global --add safe.directory $ghost_dir
 # 启动ghost开发环境
 yarn setup
