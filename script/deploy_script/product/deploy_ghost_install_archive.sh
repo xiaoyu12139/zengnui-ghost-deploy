@@ -19,6 +19,10 @@ open_npm_proxy
 
 # 给 ghost 安装目录赋予权限
 sudo chmod o+rx $ghost_archive_dir
+#获取ghost_archive_dir的父目录
+ghost_archive_parent_dir=$(dirname "$ghost_archive_dir")
+# 给 ghost 安装目录的父目录赋予权限  
+sudo chmod o+rx $ghost_archive_parent_dir
 
 # 运行安装脚本
 echo -e "\n执行 ghost_install_archive.sh脚本"
