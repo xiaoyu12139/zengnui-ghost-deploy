@@ -284,7 +284,8 @@ directory = r"C:\Users\xiaoyu\Desktop\upload"
 traverse_files(directory)
 for file in failed_list:
     print(f"上传失败的文件：{file}")
-    
-input("Press Enter to close the browser...")
+
+# input("暂停...")
 driver.quit()
 print("上传完成..")
+input("Press Enter to close the browser...")
