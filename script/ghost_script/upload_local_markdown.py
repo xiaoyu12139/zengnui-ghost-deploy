@@ -16,6 +16,15 @@ from pathlib import Path
 from PIL import Image
 import pyperclip
 from io import BytesIO
+from selenium.webdriver.common.keys import Keys
+from urllib.parse import urlparse
+import os
+from io import BytesIO
+from PIL import Image
+import win32clipboard
+from win32con import CF_DIB
+import ctypes
+from selenium.webdriver.common.action_chains import ActionChains
 
 # 可选：无头模式
 opts = Options()
@@ -67,28 +76,37 @@ post_btn.click()
 
 # update_file("test update markdown")
 
-def copy_image_to_clipboard(image_path: Path):
+def copy_image_to_clipboard(image_path: str):
     """
     复制指定路径的图片到剪贴板
     """
     # 打开图片
     image = Image.open(image_path)
-    
-    # 将图片保存到剪贴板
-    image.show()  # 使用默认图像查看器打开，可能会显示在剪贴板中
-    
-    # 图片复制到剪贴板
-    # try:
-    image = Image.open(image_path)
-    output = BytesIO()
-    image.save(output, format="PNG")
-    image_data = output.getvalue()
-    
-    # 使用 pyperclip 复制，注意 pyperclip 只支持文本，必须转换为合适的类型
-    pyperclip.copy(image_data)  # 这样可能无法复制图片，但这是一个简化例子
+
+    # 将图片转化为 BMP 格式（Windows 剪贴板需要 BMP 格式）
+    with BytesIO() as output:
+        image.convert("RGB").save(output, format="BMP")
+        data = output.getvalue()[14:]  # 跳过 BMP 头的前14 字节
+
+    # 打开剪贴板
+    win32clipboard.OpenClipboard()
+    win32clipboard.EmptyClipboard()
+    # 设置剪贴板数据为图片
+    win32clipboard.SetClipboardData(CF_DIB, data)
+    win32clipboard.CloseClipboard()
+
     print(f"图片 {image_path} 已复制到剪贴板。")
-    # except Exception as e:
-    #     print(f"复制图片到剪贴板失败: {e}")
+
+def is_url(path):
+    """检查路径是否是 URL"""
+    # 如果是 Path 对象，则直接返回 False
+    if isinstance(path, Path):
+        return False
+    
+    # 使用 urlparse 来解析 URL
+    parsed_url = urlparse(path)
+    # 检查 scheme 是否是 http 或 https
+    return parsed_url.scheme in ["http", "https"]
 
 def handle_image_path(markdown_file_path: Path, img_path: str):
     """
@@ -104,7 +122,7 @@ def handle_image_path(markdown_file_path: Path, img_path: str):
         print(f"相对路径转换为绝对路径: {img_path}")
     
     # 2. 判断是否是 URL
-    if img_path.scheme in ["http", "https"]:
+    if is_url(img_path):
         # 下载图片并保存到本地
         print(f"正在从 {img_path} 下载图片...")
         response = requests.get(img_path)
@@ -162,12 +180,25 @@ def extract_markdown_info(md_file_path: Path) -> Tuple[List[Tuple[str, int]], Li
     
     return content, text, img
 
-def paste_content():
-    editor = wait.until(
-        # 等待元素可见
-        EC.element_to_be_clickable((By.XPATH, '//*[@id="ember25"]/div[1]/div[1]/div[3]/div/div[1]/div/div[1]/div'))
+def paste_title():
+    title_ele = wait.until(
+        EC.element_to_be_clickable((By.XPATH, '/html/body/div[2]/div/main/div[1]/section/div[1]/div[1]/div[2]/textarea'))
     )
-    # 执行 JavaScript 将光标移动到编辑区域的最后
+    title_ele.click()
+    time.sleep(0.5)
+    title_ele.send_keys(Keys.CONTROL, 'v')
+
+def paste_content(content_type, first_line):
+    editor = wait.until(
+        # 等待元素可见 /html/body/div[2]/div/main/div[1]/section/div[1]/div[1]/div[3]/div/div[1]/div/div[1]/div
+        EC.element_to_be_clickable((By.XPATH, '/html/body/div[2]/div/main/div[1]/section/div[1]/div[1]/div[3]/div/div[1]/div/div[1]/div[last()]'))
+    )
+    driver.execute_script("""
+        var element = arguments[0];
+        element.scrollIntoView({behavior: 'smooth', block: 'end'});
+    """, editor)
+    time.sleep(1)
+    # # 执行 JavaScript 将光标移动到编辑区域的最后
     driver.execute_script("""
         var editor = arguments[0];
         var range = document.createRange();
@@ -176,25 +207,32 @@ def paste_content():
         range.collapse(false);  // false 表示将光标放在内容末尾
         selection.removeAllRanges();
         selection.addRange(range);
+        editor.focus();
     """, editor)
-    editor.click()  # 模拟点击光标所在位置
-    pyperclip.paste()
+
+    print(repr(pyperclip.paste()))
+    if not first_line:
+        editor.send_keys(Keys.ENTER)
+    editor.send_keys(Keys.CONTROL, 'v')
+    WebDriverWait(driver, 20).until(
+        lambda driver: driver.find_element(By.XPATH, '/html/body/div[2]/div/main/div[1]/section/header/div/div/span/div').text != "Saving..."
+    )
 
 def publish():
     publish_btn = wait.until(
-        EC.element_to_be_clickable((By.XPATH, '//*[@id="ember25"]/header/section/button[2]/span[1]'))
+        EC.element_to_be_clickable((By.XPATH, '/html/body/div[2]/div/main/div[1]/section/header/section/button[2]'))
     )
     publish_btn.click()
     continue_btn = wait.until(
-        EC.element_to_be_clickable((By.XPATH, '//*[@id="ember30"]/div/div/div[3]/button'))
+        EC.element_to_be_clickable((By.XPATH, '/html/body/div[4]/div/div/div/div[3]/button'))
     )
     continue_btn.click()
     ok_btn = wait.until(
-        EC.element_to_be_clickable((By.XPATH, '//*[@id="ember40"]'))
+        EC.element_to_be_clickable((By.XPATH, '/html/body/div[4]/div/div/div/div[2]/button[1]'))
     )
     ok_btn.click()
     close_btn = wait.until(
-        EC.element_to_be_clickable((By.XPATH, '//*[@id="ember108"]/div/button'))
+        EC.element_to_be_clickable((By.XPATH, '/html/body/div[5]/div/div/button'))
     )
     close_btn.click()
 
@@ -217,27 +255,32 @@ def traverse_files(directory):
                 try:
                     content, text, img = extract_markdown_info(file)
                     new_post_btn = wait.until(
-                        # 等待元素可见
-                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ember67"]'))
+                        # 等待元素可见 /html/body/div[2]/div/main/div[1]/section/div[1]/div[1]/div[3]/div/div[1]/div/div[1]/div
+                        EC.element_to_be_clickable((By.XPATH, '/html/body/div[2]/div/main/section/div/header/section/div[2]'))
                     )
                     new_post_btn.click()
+                    pyperclip.copy(file.stem)
+                    paste_title()
+                    first_line = True
                     for item in content:
                         if item[0] == 'text':
                             pyperclip.copy(text[item[1]])
-                        elif item[1] == 'img':
+                        elif item[0] == 'img':
                             handle_image_path(file, img[item[1]])
                         else:
                             print("error...")
                         # pyperclip.paste()
-                        paste_content()
-                        publish()
+                        paste_content(item[0], first_line)
+                        first_line = False
+                    publish()
                 except Exception as e:
                     print(f"Upload markdown file failed: {file}")
+                    print(f"error: {e}")
                     failed_list.append(file)
                 
 
 
-directory = ""
+directory = r"C:\Users\xiaoyu\Desktop\upload"
 traverse_files(directory)
 for file in failed_list:
     print(f"上传失败的文件：{file}")

@@ -16,6 +16,7 @@ pip install selenium
 pip install webdriver-manager
 pip install Pillow pyperclip
 pip install requests
+pip install Pillow pywin32
 ```
 
 新版本的selenium推荐使用webdriver-manager来自动管理浏览器的驱动
@@ -53,3 +54,6 @@ cookies = driver.get_cookies()
 print("当前的 cookies:", cookies)
 ```
 
+使用教程：
+
+将里面的directory替换为放有markdown文件的路径即可
