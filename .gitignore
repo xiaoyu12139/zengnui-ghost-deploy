@@ -13,3 +13,10 @@ simply-master.zip
 zengnui-theme.zip
 
 script/node_modules/
+
+script/tmp/*
+
+# 忽略所有tmp文件夹
+tmp/
+*/tmp/
+**/tmp/

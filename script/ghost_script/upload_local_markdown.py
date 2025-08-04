@@ -113,15 +113,7 @@ def handle_image_path(markdown_file_path: Path, img_path: str):
     处理图片路径，如果是相对路径则转换为绝对路径，
     如果是 URL 则下载图片并保存到本地，最后复制图片到剪贴板
     """
-    img_path = Path(img_path)
-
-    # 1. 判断是否是相对路径
-    if not img_path.is_absolute():
-        # 将相对路径转为绝对路径
-        img_path = markdown_file_path.parent / img_path
-        print(f"相对路径转换为绝对路径: {img_path}")
-    
-    # 2. 判断是否是 URL
+    # 2. 先判断是否是 URL（在转换为Path对象之前）
     if is_url(img_path):
         # 下载图片并保存到本地
         print(f"正在从 {img_path} 下载图片...")
@@ -132,12 +124,34 @@ def handle_image_path(markdown_file_path: Path, img_path: str):
             tmp_dir = Path(__file__).parent / "tmp"
             tmp_dir.mkdir(parents=True, exist_ok=True)  # 确保 tmp 目录存在
             
+            # 从URL中提取文件名，如果没有则使用默认名称
+            parsed_url = urlparse(img_path)
+            filename = Path(parsed_url.path).name
+            if not filename or '.' not in filename:
+                filename = "downloaded_image.png"
+            
             # 保存图片文件
-            img_filename = tmp_dir / img_path.name
+            img_filename = tmp_dir / filename
             with open(img_filename, "wb") as f:
                 f.write(response.content)
             print(f"图片已下载并保存为: {img_filename}")
-            img_path = img_filename  # 更新为下载的图片路径
+            img_path = str(img_filename)  # 更新为下载的图片路径字符串
+        else:
+            print(f"下载图片失败，状态码: {response.status_code}")
+            return
+    
+    # 转换为Path对象进行后续处理
+    img_path_obj = Path(img_path)
+    
+    # 1. 判断是否是相对路径
+    if not img_path_obj.is_absolute():
+        # 将相对路径转为绝对路径
+        img_path_obj = markdown_file_path.parent / img_path_obj
+        print(f"相对路径转换为绝对路径: {img_path_obj}")
+        img_path = str(img_path_obj)
+    
+    # 3. 复制图片到剪贴板
+    copy_image_to_clipboard(img_path)
     
     # 3. 复制图片到剪贴板
     copy_image_to_clipboard(img_path)
