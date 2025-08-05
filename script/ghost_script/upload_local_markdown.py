@@ -26,6 +26,33 @@ from win32con import CF_DIB
 import ctypes
 from selenium.webdriver.common.action_chains import ActionChains
 
+# ===== 配置区域 =====
+# 代理设置（如果需要使用代理，请取消注释并填写正确的代理地址）
+PROXY_CONFIG = {
+    'http': 'http://127.0.0.1:7890',    # HTTP代理
+    'https': 'http://127.0.0.1:7890',   # HTTPS代理
+    'socks5': 'socks5://127.0.0.1:7890' # SOCKS5代理
+}
+
+# 上传目录
+UPLOAD_DIRECTORY = r"C:\Users\xiaoyu\Desktop\upload"
+
+# Ghost配置
+GHOST_URL = "http://192.168.85.132:2368/ghost"
+GHOST_COOKIES = [
+  {
+    "domain": "192.168.85.132",
+    "hostOnly": True,
+    "httpOnly": True,
+    "name": "ghost-admin-api-session",
+    "path": "/ghost",
+    "secure": False,
+    "session": True,
+    "value": "s%3AP0N3RlUJ91VeaJXUfHL87TO3VJDT8hLz.X94%2BpDfJmDwBI4OOyUZdrkdyMkArrlRUMWoy9kFMKV8"
+  }
+]
+# ==================
+
 # 可选：无头模式
 opts = Options()
 # opts.add_argument("--headless")
@@ -39,32 +66,17 @@ driver = webdriver.Chrome(service=service, options=opts)
 # 设置隐式等待时间
 driver.implicitly_wait(10)
 
-# ghost cookie
-cookies = [
-  {
-    "domain": "192.168.85.132",
-    "hostOnly": True,
-    "httpOnly": True,
-    "name": "ghost-admin-api-session",
-    "path": "/ghost",
-    "secure": False,
-    "session": True,
-    "value": "s%3AP0N3RlUJ91VeaJXUfHL87TO3VJDT8hLz.X94%2BpDfJmDwBI4OOyUZdrkdyMkArrlRUMWoy9kFMKV8"
-  }
-]
-  
 # 打开 Ghost 博客的 URL
-ghost_url = "http://192.168.85.132:2368/ghost"
-driver.get(ghost_url)
+driver.get(GHOST_URL)
 # 添加 cookie
-driver.add_cookie(cookies[0]) 
+driver.add_cookie(GHOST_COOKIES[0]) 
 # 刷新页面以确保 cookies 生效
-driver.get(ghost_url)
+driver.get(GHOST_URL)
 # 确认 cookies 是否已设置
 cookies = driver.get_cookies()
 print("当前的 cookies:", cookies)
 # 动态等待页面加载完成
-wait = WebDriverWait(driver, 15)  # 最长等 15 秒
+wait = WebDriverWait(driver, 30)  # 增加到 30 秒
 # 等待 #login-button 可点击
 post_btn = wait.until(
     # 等待元素可见
@@ -76,9 +88,9 @@ post_btn.click()
 
 # update_file("test update markdown")
 
-def copy_image_to_clipboard(image_path: str):
+def copy_image_to_clipboard(image_path: str, max_retries: int = 5, retry_delay: float = 0.5):
     """
-    复制指定路径的图片到剪贴板
+    复制指定路径的图片到剪贴板，带重试机制
     """
     # 打开图片
     image = Image.open(image_path)
@@ -88,14 +100,30 @@ def copy_image_to_clipboard(image_path: str):
         image.convert("RGB").save(output, format="BMP")
         data = output.getvalue()[14:]  # 跳过 BMP 头的前14 字节
 
-    # 打开剪贴板
-    win32clipboard.OpenClipboard()
-    win32clipboard.EmptyClipboard()
-    # 设置剪贴板数据为图片
-    win32clipboard.SetClipboardData(CF_DIB, data)
-    win32clipboard.CloseClipboard()
-
-    print(f"图片 {image_path} 已复制到剪贴板。")
+    # 重试机制
+    for attempt in range(max_retries):
+        try:
+            # 打开剪贴板
+            win32clipboard.OpenClipboard()
+            win32clipboard.EmptyClipboard()
+            # 设置剪贴板数据为图片
+            win32clipboard.SetClipboardData(CF_DIB, data)
+            win32clipboard.CloseClipboard()
+            print(f"图片 {image_path} 已复制到剪贴板。")
+            return True
+        except Exception as e:
+            print(f"尝试 {attempt + 1}/{max_retries} 复制图片到剪贴板失败: {e}")
+            if attempt < max_retries - 1:
+                time.sleep(retry_delay)
+                # 确保剪贴板被正确关闭
+                try:
+                    win32clipboard.CloseClipboard()
+                except:
+                    pass
+            else:
+                print(f"复制图片到剪贴板最终失败: {image_path}")
+                return False
+    return False
 
 def is_url(path):
     """检查路径是否是 URL"""
@@ -117,28 +145,45 @@ def handle_image_path(markdown_file_path: Path, img_path: str):
     if is_url(img_path):
         # 下载图片并保存到本地
         print(f"正在从 {img_path} 下载图片...")
-        response = requests.get(img_path)
-        
-        if response.status_code == 200:
-            # 获取图片的文件名，并保存到当前脚本所在目录的 tmp 文件夹
-            tmp_dir = Path(__file__).parent / "tmp"
-            tmp_dir.mkdir(parents=True, exist_ok=True)  # 确保 tmp 目录存在
+        try:
+            # 设置请求头，模拟浏览器访问
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            }
             
-            # 从URL中提取文件名，如果没有则使用默认名称
-            parsed_url = urlparse(img_path)
-            filename = Path(parsed_url.path).name
-            if not filename or '.' not in filename:
-                filename = "downloaded_image.png"
+            response = requests.get(img_path, headers=headers, proxies=PROXY_CONFIG, timeout=10)
             
-            # 保存图片文件
-            img_filename = tmp_dir / filename
-            with open(img_filename, "wb") as f:
-                f.write(response.content)
-            print(f"图片已下载并保存为: {img_filename}")
-            img_path = str(img_filename)  # 更新为下载的图片路径字符串
-        else:
-            print(f"下载图片失败，状态码: {response.status_code}")
-            return
+            if response.status_code == 200:
+                # 获取图片的文件名，并保存到当前脚本所在目录的 tmp 文件夹
+                tmp_dir = Path(__file__).parent / "tmp"
+                tmp_dir.mkdir(parents=True, exist_ok=True)  # 确保 tmp 目录存在
+                
+                # 从URL中提取文件名，如果没有则使用默认名称
+                parsed_url = urlparse(img_path)
+                filename = Path(parsed_url.path).name
+                if not filename or '.' not in filename:
+                    filename = "downloaded_image.png"
+                
+                # 保存图片文件
+                img_filename = tmp_dir / filename
+                with open(img_filename, "wb") as f:
+                    f.write(response.content)
+                print(f"图片已下载并保存为: {img_filename}")
+                img_path = str(img_filename)  # 更新为下载的图片路径字符串
+            else:
+                print(f"下载图片失败，状态码: {response.status_code}")
+                print(f"直接使用URL作为文本内容: {img_path}")
+                # 将图片URL作为文本内容复制到剪贴板
+                if safe_clipboard_copy(f"图片链接: {img_path}"):
+                    return "text"  # 返回特殊标记表示这是文本内容
+                return False
+        except Exception as e:
+            print(f"下载图片时发生错误: {e}")
+            print(f"直接使用URL作为文本内容: {img_path}")
+            # 将图片URL作为文本内容复制到剪贴板
+            if safe_clipboard_copy(f"图片链接: {img_path}"):
+                return "text"  # 返回特殊标记表示这是文本内容
+            return False
     
     # 转换为Path对象进行后续处理
     img_path_obj = Path(img_path)
@@ -150,11 +195,40 @@ def handle_image_path(markdown_file_path: Path, img_path: str):
         print(f"相对路径转换为绝对路径: {img_path_obj}")
         img_path = str(img_path_obj)
     
-    # 3. 复制图片到剪贴板
-    copy_image_to_clipboard(img_path)
+    # 检查图片文件是否存在
+    if not img_path_obj.exists():
+        print(f"图片文件不存在: {img_path}")
+        # 将丢失的图片路径作为文本内容
+        if safe_clipboard_copy(f"图片文件不存在: {img_path}"):
+            return "text"
+        return False
     
     # 3. 复制图片到剪贴板
-    copy_image_to_clipboard(img_path)
+    success = copy_image_to_clipboard(img_path)
+    if not success:
+        print(f"警告：无法复制图片到剪贴板: {img_path}")
+        # 如果无法复制图片，则作为文本处理
+        if safe_clipboard_copy(f"图片路径: {img_path}"):
+            return "text"
+        return False
+    return True
+
+def safe_clipboard_copy(text: str, max_retries: int = 3, retry_delay: float = 0.5):
+    """
+    安全地复制文本到剪贴板，带重试机制
+    """
+    for attempt in range(max_retries):
+        try:
+            pyperclip.copy(text)
+            return True
+        except Exception as e:
+            print(f"尝试 {attempt + 1}/{max_retries} 复制文本到剪贴板失败: {e}")
+            if attempt < max_retries - 1:
+                time.sleep(retry_delay)
+            else:
+                print(f"复制文本到剪贴板最终失败: {text[:50]}...")
+                return False
+    return False
 
 def extract_markdown_info(md_file_path: Path) -> Tuple[List[Tuple[str, int]], List[str], List[str]]:
     """
@@ -163,8 +237,18 @@ def extract_markdown_info(md_file_path: Path) -> Tuple[List[Tuple[str, int]], Li
       2. text 列表：按出现顺序存储的所有文本段落
       3. img 列表：按出现顺序存储的所有图片 URL
     """
-    # 读取整个文件内容
-    content_str = md_file_path.read_text(encoding='utf-8')
+    try:
+        # 读取整个文件内容
+        content_str = md_file_path.read_text(encoding='utf-8')
+        
+        # 检查文件是否为空或只包含空白字符
+        if not content_str or not content_str.strip():
+            print(f"警告：文件为空或只包含空白字符: {md_file_path}")
+            return [], [], []
+        
+    except Exception as e:
+        print(f"读取文件失败 {md_file_path}: {e}")
+        return [], [], []
     
     # 图片的正则：匹配 Markdown 里的 ![alt](url)
     image_pattern = re.compile(r'!\[.*?\]\((.*?)\)')
@@ -266,36 +350,80 @@ def traverse_files(directory):
             # 判断后缀是否为 .md
             if file_extension == '.md':
                 print(f"Found markdown file: {file}")
-                try:
-                    content, text, img = extract_markdown_info(file)
-                    new_post_btn = wait.until(
-                        # 等待元素可见 /html/body/div[2]/div/main/div[1]/section/div[1]/div[1]/div[3]/div/div[1]/div/div[1]/div
-                        EC.element_to_be_clickable((By.XPATH, '/html/body/div[2]/div/main/section/div/header/section/div[2]'))
-                    )
-                    new_post_btn.click()
-                    pyperclip.copy(file.stem)
-                    paste_title()
-                    first_line = True
-                    for item in content:
-                        if item[0] == 'text':
-                            pyperclip.copy(text[item[1]])
-                        elif item[0] == 'img':
-                            handle_image_path(file, img[item[1]])
+                max_retries = 3  # 每个文件最多重试3次
+                
+                for attempt in range(max_retries):
+                    try:
+                        content, text, img = extract_markdown_info(file)
+                        
+                        # 判空处理：检查文件内容是否为空
+                        if not content or (not text and not img):
+                            print(f"文件内容为空，跳过文件: {file}")
+                            failed_list.append(file)
+                            break  # 跳出重试循环，处理下一个文件
+                        
+                        new_post_btn = wait.until(
+                            # 等待元素可见 /html/body/div[2]/div/main/div[1]/section/div[1]/div[1]/div[3]/div/div[1]/div/div[1]/div
+                            EC.element_to_be_clickable((By.XPATH, '/html/body/div[2]/div/main/section/div/header/section/div[2]'))
+                        )
+                        new_post_btn.click()
+                        
+                        # 安全地复制标题到剪贴板
+                        if not safe_clipboard_copy(file.stem):
+                            print(f"跳过文件 {file}：无法复制标题到剪贴板")
+                            break  # 跳出重试循环，处理下一个文件
+                            
+                        paste_title()
+                        first_line = True
+                        content_failed = False
+                        
+                        for item in content:
+                            if item[0] == 'text':
+                                if not safe_clipboard_copy(text[item[1]]):
+                                    print(f"跳过文本内容：无法复制到剪贴板")
+                                    content_failed = True
+                                    break
+                                paste_content('text', first_line)
+                            elif item[0] == 'img':
+                                result = handle_image_path(file, img[item[1]])
+                                if result == False:
+                                    print(f"跳过图片：无法处理图片 {img[item[1]]}")
+                                    content_failed = True
+                                    break
+                                elif result == "text":
+                                    # 图片处理失败，但已经转换为文本内容
+                                    paste_content('text', first_line)
+                                else:
+                                    # 图片处理成功
+                                    paste_content('img', first_line)
+                            else:
+                                print("error...")
+                                continue
+                            first_line = False
+                            time.sleep(0.5)  # 等待一段时间，确保内容粘贴完成
+                        
+                        if content_failed:
+                            raise Exception("内容处理失败")
+                            
+                        # 发布文章
+                        publish()
+                        print(f"文件 {file} 上传成功")
+                        break  # 成功，跳出重试循环
+                        
+                    except Exception as e:
+                        print(f"上传文件 {file} 第 {attempt + 1} 次尝试失败: {e}")
+                        if attempt < max_retries - 1:
+                            print(f"等待5秒后重试...")
+                            time.sleep(5)
                         else:
-                            print("error...")
-                        # pyperclip.paste()
-                        paste_content(item[0], first_line)
-                        first_line = False
-                    publish()
-                except Exception as e:
-                    print(f"Upload markdown file failed: {file}")
-                    print(f"error: {e}")
-                    failed_list.append(file)
+                            print(f"Upload markdown file failed: {file}")
+                            print(f"error: {e}")
+                            failed_list.append(file)
+                            driver.get(GHOST_URL)
                 
 
 
-directory = r"C:\Users\xiaoyu\Desktop\upload"
-traverse_files(directory)
+traverse_files(UPLOAD_DIRECTORY)
 for file in failed_list:
     print(f"上传失败的文件：{file}")
 
