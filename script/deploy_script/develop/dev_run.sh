@@ -7,7 +7,7 @@ config_dir=$SCRIPT_DIR/config.json
 ghost_source_dir=$(jq -r '.ghost_source_dir // empty' $config_dir)
 # 设置目标目录
 repo_dir="Ghost"
-ghost_dir=$SCRIPT_DIR/$repo_dir
+ghost_dir=$ghost_source_dir/$repo_dir
 source ${proxy_dir}
 # 开启代理
 open_shell_proxy
