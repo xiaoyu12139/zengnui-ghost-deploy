@@ -294,7 +294,12 @@ const rootApp = () => {
         const fs = require('fs');
         const path = require('path');
         const userHomeDir = os.homedir();
-        const filePath = path.join(userHomeDir, 'custom-ghost-config.json');
+        // 获取当前目录的绝对路径
+        const currentDir = process.cwd();  // 当前工作目录
+        const filePath = path.join(currentDir, 'custom-ghost-config.json');
+        // const filePath = path.join(userHomeDir, 'custom-ghost-config.json');
+        const config = require('config');
+        const siteUrl = config.get('custom-ghost-config_file_path');
         let config = {};
         if (!fs.existsSync(filePath)) {
             return res.status(404).json({
@@ -330,9 +335,26 @@ const rootApp = () => {
 
 在用户目录下创建文件 custom-ghost-config.json
 
+打开ghost管理后台创建default标签，然后在mysql中查询select id,name from tags;
+
 ```json
 {
-    "defaultTagId": {id: '000000008292eb1a4db37ea9', name: 'Default Tag'}
+    "defaultTagId": {"id": "688569d6385ca213fe93bdd6", "name": "default"}
 }
 ```
+
+## 问题
+
+如果使用const userHomeDir = os.homedir();在ghost安装后，启动会读取到/home/ghost目录
+
+所以，这里我们应该使用
+
+```
+const currentDir = process.cwd();  // 当前工作目录
+const filePath = path.join(currentDir, 'custom-ghost-config.json');
+```
+
+这种方式，这样在开发环境中读取到的目录是Ghost/ghost/core下的文件
+
+在生成环境中读取到的为安装目录下的文件，也就是和config.producttion.json同级的目录下
 

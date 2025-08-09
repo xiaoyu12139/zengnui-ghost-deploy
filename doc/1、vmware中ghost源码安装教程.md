@@ -205,7 +205,8 @@ sudo chmod -R 777 项目目录名
         "user": "your-email@qq.com",  // 你的 QQ 邮箱地址
         "pass": "your-auth-code"  // 你的授权码（不是密码）
       }
-    }
+    }，
+     "from": "your-email@qq.com"
   }
 2.配置vmware中的ghost到内网可以访问
 "url": "http://192.168.72.130:2368",
@@ -261,6 +262,8 @@ GRANT ALL PRIVILEGES ON ghostdb.* TO 'ghostuser'@'localhost';
 FLUSH PRIVILEGES;
 ```
 
+默认安装的mysql，sudo mysql可进入root，不需要密码。修改指定用户密码：ALTER USER 'ghostuser'@'localhost' IDENTIFIED BY 'ghostpassword';
+
 安装ghost：ghost install官方文档https://ghost.org/docs/ghost-cli/#ghost-install
 
 ```
@@ -282,7 +285,8 @@ ghost install --archive 绝对路径/ghost-custom.tgz --dir 安装到的目录�
 但是在启动过程中还遇到的问题有:报错cron不是一个函数。解决办法为：
 1.在current下的packge中的搜索cron找到cron的版本修改为1.8.2。（后续需要测试，是否需要修改这里的版本）如果不需要则只需要执行下一步的操作即可
 2.找到current/node_modules/bree/lib这个目录，打开job-validator.js 文件，然后定位到文件中
-var cron = require('cron-validate');将这个改成var cronModule = require('cron-validate');
+var cron = require('cron-validate');将这个改成
+var cronModule = require('cron-validate');
 // 兼容新版 cron-validate 的 default 导出和老版直接导出
 var cron = typeof cronModule === 'function'
     ? cronModule

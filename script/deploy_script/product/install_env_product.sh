@@ -12,7 +12,7 @@ install_if_missing() {
     fi
 }
 # 软件包列表
-packages=("gedit" "mysql-server" "vim" "curl" "git" "python3-venv" "python3-dev" "python3-setuptools")
+packages=("gedit" "mysql-server" "vim" "curl" "git" "python3-venv" "python3-dev" "python3-setuptools" "net-tools" "openssh-server")
 # 遍历软件包列表，检查并安装
 for package in "${packages[@]}"; do
     install_if_missing $package

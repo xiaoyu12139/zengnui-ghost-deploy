@@ -62,6 +62,8 @@ resolvectl status | grep 'DNS Servers'
 
 作为系统服务自动启动
 
+sudo vim /etc/systemd/system/cloudflared-tunnel@.service
+
 创建系统服务单元
 
 ```
